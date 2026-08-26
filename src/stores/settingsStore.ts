@@ -815,6 +815,8 @@ export interface SettingsState
   setAllowLocalFallback: (value: boolean) => void;
   setFallbackWhisperModel: (value: string) => void;
   setPreferredLanguage: (value: string) => void;
+  whisperLocalLanguage: string;
+  setWhisperLocalLanguage: (value: string) => void;
   setChineseScriptPreference: (value: ChineseScriptPreference) => void;
   setCloudTranscriptionProvider: (value: string) => void;
   setCloudTranscriptionModel: (value: string) => void;
@@ -1218,6 +1220,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   allowLocalFallback: readBoolean("allowLocalFallback", false),
   fallbackWhisperModel: readString("fallbackWhisperModel", "base"),
   preferredLanguage: readString("preferredLanguage", "auto"),
+  whisperLocalLanguage: readString("whisperLocalLanguage", ""),
   chineseScriptPreference: normalizeChineseScriptPreference(
     readString("chineseScriptPreference", "as-transcribed")
   ),
@@ -1705,6 +1708,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   setAllowLocalFallback: createBooleanSetter("allowLocalFallback"),
   setFallbackWhisperModel: createStringSetter("fallbackWhisperModel"),
   setPreferredLanguage: createStringSetter("preferredLanguage"),
+  setWhisperLocalLanguage: createStringSetter("whisperLocalLanguage"),
   setChineseScriptPreference: (value: ChineseScriptPreference) =>
     createStringSetter("chineseScriptPreference")(normalizeChineseScriptPreference(value)),
   setCloudTranscriptionProvider: createStringSetter("cloudTranscriptionProvider"),
@@ -2267,6 +2271,8 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       s.setFallbackWhisperModel(settings.fallbackWhisperModel);
     if (settings.preferredLanguage !== undefined)
       s.setPreferredLanguage(settings.preferredLanguage);
+    if (settings.whisperLocalLanguage !== undefined)
+      s.setWhisperLocalLanguage(settings.whisperLocalLanguage);
     if (settings.chineseScriptPreference !== undefined)
       s.setChineseScriptPreference(settings.chineseScriptPreference);
     if (settings.cloudTranscriptionProvider !== undefined)

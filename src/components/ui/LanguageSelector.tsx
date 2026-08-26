@@ -23,6 +23,8 @@ interface LanguageSelectorProps {
   options?: LanguageOption[];
   className?: string;
   placeholder?: string;
+  isMulti?: boolean;
+  maxSelections?: number;
 }
 
 export default function LanguageSelector({
@@ -31,6 +33,8 @@ export default function LanguageSelector({
   options,
   className = "",
   placeholder,
+  isMulti = false,
+  maxSelections = 0,
 }: LanguageSelectorProps) {
   const { t } = useTranslation();
   const items = options ?? REGISTRY_OPTIONS;
@@ -143,10 +147,31 @@ export default function LanguageSelector({
     }
   };
 
+  const selectedValues = isMulti ? (value || "").split(",").filter(Boolean) : [value];
+
   const handleSelect = (languageValue: string) => {
-    onChange(languageValue);
-    setIsOpen(false);
-    handleSearchQueryChange("");
+    if (isMulti) {
+      if (languageValue === "auto") {
+        onChange("auto");
+        setIsOpen(false);
+      } else {
+        let newValues = selectedValues.filter(v => v !== "auto");
+        if (newValues.includes(languageValue)) {
+          newValues = newValues.filter(v => v !== languageValue);
+          if (newValues.length === 0) newValues = ["auto"];
+        } else {
+          if (maxSelections > 0 && newValues.length >= maxSelections) {
+            return;
+          }
+          newValues.push(languageValue);
+        }
+        onChange(newValues.join(','));
+      }
+    } else {
+      onChange(languageValue);
+      setIsOpen(false);
+      handleSearchQueryChange("");
+    }
   };
 
   const clearSearch = () => {
@@ -157,6 +182,7 @@ export default function LanguageSelector({
   };
 
   const selected = items.find((l) => l.value === value);
+  const selectedItems = items.filter((l) => selectedValues.includes(l.value));
 
   return (
     <div className={`relative ${className}`} ref={setContainerNode}>
@@ -182,9 +208,15 @@ export default function LanguageSelector({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={`truncate ${selected ? "text-foreground" : "text-muted-foreground"}`}>
-          <span className="mr-1.5">{selected?.flag ?? "\uD83C\uDF10"}</span>
-          {selected?.label ?? (value || placeholder || "")}
+        <span className={`truncate ${selectedValues.length > 0 && selectedValues[0] ? "text-foreground" : "text-muted-foreground"}`}>
+          {isMulti && selectedItems.length > 0 ? (
+            selectedItems.map(l => l.label).join(", ")
+          ) : (
+            <>
+              <span className="mr-1.5">{selected?.flag ?? "\uD83C\uDF10"}</span>
+              {selected?.label ?? (value || placeholder || "")}
+            </>
+          )}
         </span>
         <ChevronDown
           className={`w-3.5 h-3.5 shrink-0 text-muted-foreground transition-[color,transform] duration-200 ${
@@ -242,7 +274,7 @@ export default function LanguageSelector({
               ) : (
                 <div role="listbox" className="space-y-0.5 pt-1">
                   {filteredLanguages.map((language, index) => {
-                    const isSelected = language.value === value;
+                    const isSelected = selectedValues.includes(language.value);
                     const isHighlighted = index === highlightedIndex;
 
                     return (

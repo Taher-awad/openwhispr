@@ -493,6 +493,8 @@ interface TranscriptionSectionProps {
   setWhisperModel: (model: string) => void;
   parakeetModel: string;
   setParakeetModel: (model: string) => void;
+  whisperLocalLanguage: string;
+  setWhisperLocalLanguage: (language: string) => void;
   cloudTranscriptionBaseUrl?: string;
   setCloudTranscriptionBaseUrl: (url: string) => void;
   transcriptionMode: InferenceMode;
@@ -529,6 +531,8 @@ function TranscriptionSection({
   setWhisperModel,
   parakeetModel,
   setParakeetModel,
+  whisperLocalLanguage,
+  setWhisperLocalLanguage,
   cloudTranscriptionBaseUrl,
   setCloudTranscriptionBaseUrl,
   transcriptionMode,
@@ -675,7 +679,28 @@ function TranscriptionSection({
       />
 
       {effectiveTranscriptionMode === "providers" && renderTranscriptionPicker("cloud")}
-      {effectiveTranscriptionMode === "local" && renderTranscriptionPicker("local")}
+      {effectiveTranscriptionMode === "local" && (
+        <div className="space-y-4">
+          {renderTranscriptionPicker("local")}
+          {localTranscriptionProvider === "whisper" && (
+            <SettingsPanel>
+              <SettingsPanelRow>
+                <SettingsRow
+                  label={t("settings.language.transcriptionLanguage", "Transcription Languages")}
+                  description={t("settings.language.transcriptionWhisperDescription", "Leave empty to inherit from Global Preferences. Select up to 3 languages for local Whisper.")}
+                >
+                  <LanguageSelector
+                    value={whisperLocalLanguage}
+                    onChange={setWhisperLocalLanguage}
+                    isMulti={true}
+                    maxSelections={3}
+                  />
+                </SettingsRow>
+              </SettingsPanelRow>
+            </SettingsPanel>
+          )}
+        </div>
+      )}
       {previewAvailable && renderPreviewToggle()}
 
       {effectiveTranscriptionMode === "self-hosted" && (

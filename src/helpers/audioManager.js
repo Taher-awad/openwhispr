@@ -610,14 +610,20 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
 
   // Whisper only accepts language "zh"; script (简体/繁體) is applied here. See #975.
   // No transcript exists yet, so only an explicit zh-CN/zh-TW may bias the prompt.
-  getWhisperPrompt(settings = getSettings()) {
-    return mergeWhisperPrompt(
+  getWhisperPrompt(settings = getSettings(), isLocalWhisper = false) {
+    let prompt = mergeWhisperPrompt(
       this.getCustomDictionaryPrompt(),
       resolveChineseScriptTarget(
-        this.getEffectiveSttLanguage(settings),
+        this.getEffectiveSttLanguage(settings, isLocalWhisper),
         settings.chineseScriptPreference
       )
     );
+    const sttLanguage = this.getEffectiveSttLanguage(settings, isLocalWhisper);
+    if (sttLanguage && sttLanguage.includes(",")) {
+      const multiLangPrompt = `You are a professional transcriber fluent in these languages: ${sttLanguage}. Ensure precise transcription.`;
+      prompt = prompt ? `${multiLangPrompt} ${prompt}` : multiLangPrompt;
+    }
+    return prompt;
   }
 
   // Cleanup runs before the translate step, so it still works in the STT language.
@@ -756,9 +762,12 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
 
   // In translation mode the STT hint is the configured source language, not
   // the UI-wide preferred language; "auto" keeps whisper auto-detection.
-  getEffectiveSttLanguage(settings) {
+  getEffectiveSttLanguage(settings, isLocalWhisper = false) {
     if (this.translationRequested) {
       return settings.translationSourceLanguage || "auto";
+    }
+    if (isLocalWhisper && settings.whisperLocalLanguage) {
+      return settings.whisperLocalLanguage;
     }
     return settings.preferredLanguage;
   }
@@ -1948,14 +1957,14 @@ registerProcessor("pcm-streaming-processor", PCMStreamingProcessor);
       // Send original audio to main process - FFmpeg in main process handles conversion
       // (renderer-side AudioContext conversion was unreliable with WebM/Opus format)
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const language = getBaseLanguageCode(this.getEffectiveSttLanguage(getSettings()));
+      const language = getBaseLanguageCode(this.getEffectiveSttLanguage(getSettings(), true));
       const options = { model };
       if (language) {
         options.language = language;
       }
 
       // Add custom dictionary as initial prompt to help Whisper recognize specific words
-      const dictionaryPrompt = this.getWhisperPrompt();
+      const dictionaryPrompt = this.getWhisperPrompt(getSettings(), true);
       if (dictionaryPrompt) {
         options.initialPrompt = dictionaryPrompt;
       }

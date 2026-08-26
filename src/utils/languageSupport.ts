@@ -26,6 +26,7 @@ const LANGUAGE_INSTRUCTIONS: Record<string, string> = Object.fromEntries(
 
 export function getBaseLanguageCode(language: string | null | undefined): string | undefined {
   if (!language || language === "auto") return undefined;
+  if (language.includes(",")) return "auto";
   return language.split("-")[0];
 }
 
